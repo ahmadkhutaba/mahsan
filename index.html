@@ -1,8 +1,8 @@
 <!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e6e8c"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="חוסרים במחסן">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="מלאי מחסן">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style>
-<title>חוסרים במחסן</title>
+<title>מלאי מחסן</title>
 </head><body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Rubik:wght@500;700&display=swap">
@@ -89,24 +89,81 @@ pre#txt{white-space:pre-wrap;background:var(--surface);border:1px solid var(--li
 #print th{background:#e6e6e6;font-size:12px} #print td.d{text-align:right} #print td.c{font-weight:700;font-size:15px}
 #print td.i{width:62px;height:44px;padding:2px} #print td.i img{max-width:58px;max-height:40px}
 #print .pfoot{display:flex;justify-content:space-between;margin-top:14px;font-size:14px;font-weight:700}
+.modes{display:flex;gap:6px}
+.modes .chip{flex:1;text-align:center;font-weight:600}
+.colors{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.colors .chip{flex:0 0 auto}
+.stock{grid-area:qty;display:flex;align-items:center;gap:8px;justify-content:flex-start}
+.stock b{font-family:var(--display);font-size:1.25rem;font-variant-numeric:tabular-nums;min-width:2.2rem;text-align:center;padding:2px 8px;border-radius:8px;background:var(--bg)}
+.stock .mn{font-size:.75rem;color:var(--muted)}
+.row.low{box-shadow:inset -4px 0 0 var(--danger)}
+.row.low .stock b{background:var(--danger);color:#fff}
+.stock input{width:3.4rem;height:34px;text-align:center;font:inherit;font-weight:700;border:1px solid var(--accent);border-radius:8px;background:var(--surface);color:var(--fg)}
+.stock input.ch{background:var(--hit);border-color:var(--hit-line)}
+@media(min-width:560px){.stock{justify-content:flex-end}}
+.ibar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.ibar .grp{display:flex;gap:6px;flex-wrap:wrap}
+.ibar .btn{padding:9px 12px}
+.lowlink{font:inherit;background:none;border:0;color:var(--danger);font-weight:700;cursor:pointer;padding:0;text-decoration:underline}
+.status{font-size:.8rem;color:var(--muted)}
+.status.err{color:var(--danger)}
+#move{position:fixed;inset:0;z-index:20;background:var(--bg);overflow:auto;padding-top:env(safe-area-inset-top,0px)}
+#move .wrap{padding-block:16px 40px}
+.fields select{font:inherit;color:var(--fg);padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--surface)}
+.filebtn{display:inline-flex;align-items:center;gap:8px}
+.filebtn input{display:none}
+td.after.neg,td.after.lowc{color:var(--danger);font-weight:700}
+td input.n{width:3.4rem;font:inherit;font-weight:700;text-align:center;padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg)}
+.addrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.addrow input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);min-width:0}
+.warnbox{background:var(--hit);border:1px solid var(--hit-line);border-radius:10px;padding:8px 12px;margin-top:10px;font-size:.88rem}
+.x{background:none;border:0;color:var(--danger);font-size:1.1rem;cursor:pointer}
 </style>
 
 <div class="wrap">
   <header>
-    <h1>חוסרים במחסן <small>אלום מוסטפא · מוט 6 מ'</small></h1>
+    <h1><span id="htitle">מלאי מחסן</span> <small>אלום מוסטפא</small></h1>
+    <div class="modes" id="modes"><button class="chip" data-m="inv">מלאי</button><button class="chip" data-m="order">הזמנה לספק</button></div>
     <div class="tools">
       <input id="q" type="search" placeholder="חיפוש: מספר קליל או תאור" autocomplete="off">
       <button class="chip" id="onlyOn" aria-pressed="false">רק מה שסימנתי</button>
     </div>
+    <div class="colors" id="colors"></div>
     <nav class="jump" id="jump"></nav>
   </header>
   <main id="main"></main>
 </div>
 
-<div class="bar"><div class="in">
+<div class="bar"><div class="in" id="obarWrap">
   <div class="tot" id="tot"></div>
   <button class="btn" id="openSheet">הזמנה</button>
+</div><div class="in ibar" id="ibarWrap" hidden><div class="ibar" id="ibar" style="width:100%"></div></div></div>
+<div id="move" hidden><div class="wrap">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+    <h1 id="mvTitle">יציאה מהמלאי</h1>
+    <button class="btn ghost" id="mvClose">ביטול</button>
+  </div>
+  <div class="fields">
+    <label for="mvColor">צבע<select id="mvColor"></select></label>
+    <label for="mvRef">מספר הזמנה / תעודה<input id="mvRef" placeholder="למשל 5718"></label>
+    <label for="mvUser">מי רושם<input id="mvUser" placeholder="שם"></label>
+  </div>
+  <label class="btn ghost filebtn" for="mvFile">טען הזמנה מאל-קל (PDF)<input type="file" id="mvFile" accept="application/pdf"></label>
+  <div class="addrow">
+    <input id="mvAddP" placeholder="מספר פרופיל" style="flex:1 1 120px" autocomplete="off" list="allp">
+    <input id="mvAddN" placeholder="מוטות" inputmode="numeric" style="width:6rem">
+    <button class="btn ghost" id="mvAdd" type="button">הוסף</button>
+  </div>
+  <datalist id="allp"></datalist>
+  <div id="mvWarn"></div>
+  <div class="tbl" style="margin-top:12px"><table>
+    <thead><tr><th>שרטוט</th><th>מספר</th><th>תאור</th><th>מוטות</th><th>במלאי</th><th>אחרי</th><th></th></tr></thead>
+    <tbody id="mvBody"></tbody>
+  </table></div>
+  <div class="acts"><button class="btn" id="mvOk">אשר</button></div>
+  <p class="note" id="mvMsg"></p>
 </div></div>
+
 
 <div id="sheet" hidden><div class="wrap">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -114,7 +171,7 @@ pre#txt{white-space:pre-wrap;background:var(--surface);border:1px solid var(--li
     <button class="btn ghost" id="closeSheet">חזרה לרשימה</button>
   </div>
   <div class="fields">
-    <label for="color">צבע / אילגון<input id="color" placeholder="למשל: 9005 מט"></label>
+    <label for="color">צבע / אילגון<input id="color" list="colorlist" placeholder="למשל: 9005 מט"><datalist id="colorlist"><option>1013</option><option>9005 מט</option><option>לבן מט</option><option>1200</option><option>2030</option></datalist></label>
     <label for="supplier">לכבוד<input id="supplier" placeholder="ספק"></label>
     <label for="note">הערה<input id="note" placeholder=""></label>
   </div>
@@ -146,7 +203,7 @@ function kgBar(x){return x.o&&x.o.kgm? x.o.kgm*lenOf(x.p) : x.k;}
 const main=document.getElementById('main'), q=document.getElementById('q'), only=document.getElementById('onlyOn');
 const fmt=n=>n.toLocaleString('he-IL',{minimumFractionDigits:2,maximumFractionDigits:2});
 
-function render(){
+function renderOrder(){
   const term=q.value.trim().toLowerCase(), on=only.getAttribute('aria-pressed')==='true';
   let html='', nav='', any=false;
   G.forEach((g,gi)=>{
@@ -179,9 +236,9 @@ function totals(){
 function setQ(p,v){v=Math.max(0,Math.floor(+v||0)); if(v) S.q[p]=v; else delete S.q[p]; save();
   document.querySelectorAll(`.row[data-p="${p}"]`).forEach(r=>{r.classList.toggle('on',v>0); r.querySelector('input').value=v||'';});
   totals();}
-main.addEventListener('click',e=>{const b=e.target.closest('button[data-a]'); if(!b) return;
+main.addEventListener('click',e=>{if(UI.mode!=='order') return; const b=e.target.closest('button[data-a]'); if(!b) return;
   const p=b.closest('.row').dataset.p; setQ(p,(S.q[p]||0)+(+b.dataset.a));});
-main.addEventListener('change',e=>{if(e.target.tagName==='INPUT') setQ(e.target.closest('.row').dataset.p,e.target.value); else if(e.target.classList.contains('len')){S.L=S.L||{};S.L[e.target.dataset.p]=+e.target.value;save();render();}});
+main.addEventListener('change',e=>{if(UI.mode!=='order') return; if(e.target.tagName==='INPUT') setQ(e.target.closest('.row').dataset.p,e.target.value); else if(e.target.classList.contains('len')){S.L=S.L||{};S.L[e.target.dataset.p]=+e.target.value;save();render();}});
 q.addEventListener('input',render);
 only.addEventListener('click',()=>{only.setAttribute('aria-pressed',only.getAttribute('aria-pressed')==='true'?'false':'true');render();});
 
@@ -248,7 +305,256 @@ document.getElementById('pdf').onclick=async()=>{
     m.textContent='ה-PDF נשמר בתיקיית ההורדות.';
   }catch(e){ m.textContent=e&&e.code==='declined'?'השמירה בוטלה.':'לא הצלחתי לשמור PDF.'; }
 };
-render();
+// ===== מלאי =====
+const API = '';
+const AKEY = 'alum-1990';
+const COLORS = ['1013', '9005 מט', 'לבן מט', '1200', '2030'];
+const IKEY = 'alum-inv-v1';
+let INV = { rows: {}, ts: 0 };
+let UI = { mode: API ? 'inv' : 'order', color: COLORS[0], lowOnly: false, counting: false, cnt: {}, status: '', err: false, busy: false };
+try { const s = JSON.parse(localStorage.getItem(IKEY) || 'null'); if (s) { if (s.inv) INV = s.inv; if (s.color) UI.color = s.color; if (s.mode && API) UI.mode = s.mode; } } catch (e) { }
+const saveInv = () => { try { localStorage.setItem(IKEY, JSON.stringify({ inv: INV, color: UI.color, mode: UI.mode })); } catch (e) { } };
+const np = p => String(p).trim().replace(/^0+/, '').toLowerCase();
+const WN = {}; Object.values(W).forEach(x => { WN[np(x.p)] = x; });
+const ci = () => COLORS.indexOf(UI.color);
+function stockOf(p, c) { const r = INV.rows[np(p)]; return r ? (r.q[c === undefined ? ci() : c] || 0) : 0; }
+function known(p, c) { const r = INV.rows[np(p)]; if (!r) return false; const v = r.q[c === undefined ? ci() : c]; return v !== null && v !== ''; }
+function minOf(p) { const r = INV.rows[np(p)]; return r ? r.min : 20; }
+function isLow(p) { return known(p) && stockOf(p) < minOf(p); }
+
+function applyServer(d) {
+  if (!d || !d.ok) throw new Error((d && d.error) || 'server');
+  const rows = {}; d.rows.forEach(r => { rows[np(r.p)] = { min: r.min, q: r.q.map(v => (v === '' || v === null) ? null : Number(v)) }; });
+  INV = { rows, ts: d.ts }; saveInv();
+}
+async function apiGet() { const r = await fetch(API + '?k=' + encodeURIComponent(AKEY), { cache: 'no-store' }); return r.json(); }
+async function apiPost(body) {
+  const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ k: AKEY }, body)) });
+  return r.json();
+}
+function setStatus(t, err) { UI.status = t; UI.err = !!err; const el = document.getElementById('istatus'); if (el) { el.textContent = t; el.className = 'status' + (err ? ' err' : ''); } }
+function ago(ts) { if (!ts) return 'לא סונכרן'; const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? 'מעודכן עכשיו' : m < 60 ? `עודכן לפני ${m} דק'` : `עודכן ${new Date(ts).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })}`; }
+async function sync(quiet) {
+  if (!API) return;
+  if (!quiet) setStatus('מסנכרן…');
+  try {
+    let d = await apiGet();
+    if (d.ok && d.rows.length === 0) { // first run: fill the sheet with the profile list
+      const items = []; const seen = new Set();
+      G.forEach(g => g.items.forEach(it => { if (!seen.has(it[0])) { seen.add(it[0]); items.push([it[0], it[1], g.n, it[2]]); } }));
+      d = await apiPost({ action: 'init', items, min: 20 });
+    }
+    applyServer(d); setStatus(ago(INV.ts)); if (UI.mode === 'inv' && !UI.counting) render();
+  } catch (e) { setStatus('אין חיבור לגיליון. מציג נתונים אחרונים (' + ago(INV.ts) + ')', true); }
+}
+
+// ---- inventory list ----
+function renderInv() {
+  const term = q.value.trim().toLowerCase();
+  let html = '', nav = '', any = false;
+  G.forEach((g, gi) => {
+    const rows = g.items.filter(([p, s, d]) => {
+      if (UI.lowOnly && !isLow(p)) return false;
+      if (!term) return true;
+      const pl = p.toLowerCase(); return pl.includes(term) || pl.replace(/^0+/, '').startsWith(term) || d.toLowerCase().includes(term);
+    });
+    if (!rows.length) return; any = true;
+    const lowN = g.items.filter(([p]) => isLow(p)).length;
+    nav += `<a href="#g${gi}">${g.n}${lowN ? ` · <span style="color:var(--danger)">${lowN}</span>` : ''}</a>`;
+    html += `<section id="g${gi}"><h2>${g.n}<span>${lowN ? `${lowN} מתחת למינימום` : 'הכל במלאי'}</span></h2><div class="list">` +
+      rows.map(([p, s, d]) => {
+        const st = stockOf(p), mn = minOf(p), low = st < mn, im = IM[p.replace(/^0+/, '')];
+        const cv = UI.cnt[p];
+        const right = UI.counting
+          ? `<input class="${cv !== undefined ? 'ch' : ''}" data-cp="${p}" inputmode="numeric" value="${cv !== undefined ? cv : st}" aria-label="ספירה ${p}"><span class="mn">היה ${st}</span>`
+          : `<b>${known(p) ? st : '—'}</b><span class="mn">${known(p) ? 'מינימום ' + mn : 'לא נספר'}</span>`;
+        return `<div class="row${low && !UI.counting ? ' low' : ''}" data-p="${p}">
+        <div class="pic">${im ? `<img src="${im}" alt="">` : ''}</div><div class="code">${p}</div>
+        <div class="info"><div class="desc">${d}</div><div class="meta">${s}</div></div>
+        <div class="stock">${right}</div></div>`;
+      }).join('') + `</div></section>`;
+  });
+  main.innerHTML = any ? html : `<div class="empty">${UI.lowOnly ? `אין חוסרים בצבע ${UI.color}.` : 'לא נמצא פרופיל כזה.'}</div>`;
+  document.getElementById('jump').innerHTML = nav;
+  invBar();
+}
+function lowList(c) { const out = []; const seen = new Set(); G.forEach(g => g.items.forEach(([p]) => { if (!seen.has(p)) { seen.add(p); const st = stockOf(p, c), mn = minOf(p); if (known(p, c) && st < mn) out.push({ p, st, mn }); } })); return out; }
+function invBar() {
+  const b = document.getElementById('ibar'); if (!b) return;
+  if (UI.counting) {
+    const n = Object.keys(UI.cnt).length;
+    b.innerHTML = `<span class="tot">ספירה · ${UI.color} · <b>${n}</b> שינויים</span><span class="grp"><button class="btn ghost" id="cntCancel">ביטול</button><button class="btn" id="cntSave"${n ? '' : ' disabled'}>שמור ספירה</button></span>`;
+    document.getElementById('cntCancel').onclick = () => { UI.counting = false; UI.cnt = {}; render(); };
+    document.getElementById('cntSave').onclick = saveCount;
+    return;
+  }
+  const low = lowList();
+  b.innerHTML = `<span class="tot">${low.length ? `<button class="lowlink" id="toOrder">${low.length} פרופילים מתחת למינימום · להזמנה</button>` : `אין חוסרים ב-${UI.color}`}<br><span id="istatus" class="status${UI.err ? ' err' : ''}">${UI.status || ago(INV.ts)}</span></span>
+  <span class="grp"><button class="btn" id="goOut">יציאה −</button><button class="btn ghost" id="goIn">קבלה +</button><button class="btn ghost" id="goCnt">ספירה</button></span>`;
+  document.getElementById('goOut').onclick = () => openMove('out');
+  document.getElementById('goIn').onclick = () => openMove('in');
+  document.getElementById('goCnt').onclick = () => { UI.counting = true; UI.cnt = {}; render(); };
+  const t = document.getElementById('toOrder'); if (t) t.onclick = lowToOrder;
+}
+main.addEventListener('input', e => {
+  const p = e.target.dataset.cp; if (!p) return;
+  const v = e.target.value.trim();
+  if (v === '' || +v === stockOf(p)) delete UI.cnt[p]; else UI.cnt[p] = Math.max(0, Math.floor(+v || 0));
+  e.target.classList.toggle('ch', UI.cnt[p] !== undefined);
+  invBar();
+});
+async function saveCount() {
+  const items = Object.entries(UI.cnt).map(([p, n]) => ({ p, n, d: (W[p] || {}).d, s: (W[p] || {}).s }));
+  if (!items.length) return;
+  const btn = document.getElementById('cntSave'); btn.disabled = true; btn.textContent = 'שומר…';
+  try {
+    applyServer(await apiPost({ action: 'count', color: UI.color, items, user: localStorage.getItem('alum-user') || '' }));
+    UI.counting = false; UI.cnt = {}; setStatus('הספירה נשמרה · ' + ago(INV.ts)); render();
+  } catch (e) { btn.disabled = false; btn.textContent = 'שמור ספירה'; setStatus('השמירה נכשלה. בדוק אינטרנט ונסה שוב.', true); }
+}
+function lowToOrder() {
+  const c = ci();
+  lowList(c).forEach(x => { S.q[x.p] = Math.max(1, x.mn * 2 - x.st); });
+  S.color = UI.color; save();
+  document.getElementById('color').value = S.color;
+  setMode('order'); only.setAttribute('aria-pressed', 'true'); render();
+}
+
+// ---- move dialog (out / in) ----
+let MV = { type: 'out', lines: [] };
+function openMove(type) {
+  MV = { type, lines: [] };
+  document.getElementById('mvTitle').textContent = type === 'out' ? 'יציאה מהמלאי' : 'קבלת סחורה למלאי';
+  document.getElementById('mvOk').textContent = type === 'out' ? 'אשר והורד מהמלאי' : 'אשר והוסף למלאי';
+  const sel = document.getElementById('mvColor'); sel.innerHTML = COLORS.map(c => `<option${c === UI.color ? ' selected' : ''}>${c}</option>`).join('');
+  document.getElementById('mvRef').value = '';
+  document.getElementById('mvUser').value = localStorage.getItem('alum-user') || '';
+  document.getElementById('mvWarn').innerHTML = ''; document.getElementById('mvMsg').textContent = '';
+  mvRender(); document.getElementById('move').hidden = false;
+}
+function mvColorIdx() { return COLORS.indexOf(document.getElementById('mvColor').value); }
+function mvRender() {
+  const c = mvColorIdx(), sign = MV.type === 'out' ? -1 : 1;
+  document.getElementById('mvBody').innerHTML = MV.lines.length ? MV.lines.map((l, i) => {
+    const x = WN[np(l.p)] || { p: l.p, d: l.d || '—' }; const st = stockOf(x.p, c), af = st + sign * l.n, mn = minOf(x.p);
+    const im = IM[String(x.p).replace(/^0+/, '')];
+    return `<tr><td class="i">${im ? `<img src="${im}" alt="">` : ''}</td><td><b>${x.p}</b></td><td class="d">${x.d}</td>
+    <td><input class="n" data-i="${i}" inputmode="numeric" value="${l.n}"></td><td>${st}</td><td class="after${af < 0 ? ' neg' : af < mn ? ' lowc' : ''}">${af}</td>
+    <td><button class="x" data-del="${i}" aria-label="מחק">✕</button></td></tr>`;
+  }).join('') : `<tr><td colspan="7" class="empty">טען PDF של הזמנה מאל-קל, או הוסף פרופילים ידנית.</td></tr>`;
+  document.getElementById('mvOk').disabled = !MV.lines.length;
+}
+function mvAddLine(p, n, d) {
+  n = Math.floor(+n || 0); if (!p || n <= 0) return;
+  const k = np(p), x = WN[k]; const code = x ? x.p : String(p).trim();
+  const ex = MV.lines.find(l => np(l.p) === k); if (ex) ex.n += n; else MV.lines.push({ p: code, n, d: x ? x.d : d });
+}
+document.getElementById('mvBody').addEventListener('input', e => { const i = e.target.dataset.i; if (i === undefined) return; MV.lines[i].n = Math.max(0, Math.floor(+e.target.value || 0)); });
+document.getElementById('mvBody').addEventListener('change', () => mvRender());
+document.getElementById('mvBody').addEventListener('click', e => { const i = e.target.dataset.del; if (i === undefined) return; MV.lines.splice(+i, 1); mvRender(); });
+document.getElementById('mvColor').onchange = mvRender;
+document.getElementById('mvClose').onclick = () => { document.getElementById('move').hidden = true; };
+document.getElementById('mvAdd').onclick = () => {
+  const p = document.getElementById('mvAddP').value.trim(), n = document.getElementById('mvAddN').value;
+  if (!p || !(+n > 0)) return;
+  if (!WN[np(p)]) { document.getElementById('mvWarn').innerHTML = `<div class="warnbox">פרופיל ${p} לא ברשימה. הוא יתווסף לגיליון כפרופיל חדש.</div>`; }
+  mvAddLine(p, n); document.getElementById('mvAddP').value = ''; document.getElementById('mvAddN').value = ''; mvRender();
+};
+document.getElementById('allp').innerHTML = Object.values(W).map(x => `<option value="${x.p}">${x.d}</option>`).join('');
+
+// ---- Al-Kal PDF reader ----
+let pdfjsReady = null;
+function loadPdfjs() {
+  if (pdfjsReady) return pdfjsReady;
+  pdfjsReady = (async () => {
+    await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+    const w = await (await fetch('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js')).text();
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([w], { type: 'text/javascript' }));
+    return window.pdfjsLib;
+  })();
+  pdfjsReady.catch(() => { pdfjsReady = null; });
+  return pdfjsReady;
+}
+async function parseAlkal(buf) {
+  const lib = await loadPdfjs();
+  const doc = await lib.getDocument({ data: buf }).promise;
+  const lines = [], unknown = []; let ref = '', color = '';
+  for (let i = 1; i <= doc.numPages; i++) {
+    const tc = await (await doc.getPage(i)).getTextContent();
+    const toks = tc.items.filter(t => t.str.trim()).map(t => ({ s: t.str.trim(), x: t.transform[4], y: t.transform[5] })).sort((a, b) => b.y - a.y);
+    const rows = [];
+    toks.forEach(t => { let r = rows.find(r => Math.abs(r.y - t.y) < 4); if (!r) { r = { y: t.y, t: [] }; rows.push(r); } r.t.push(t); });
+    rows.forEach(r => {
+      const txt = r.t.map(t => t.s).join(' ');
+      if (!ref && /פרופילים/.test(txt)) { const m = txt.match(/\b(\d{4,5})\b/); if (m) ref = m[1]; }
+      if (!color && /אילגון/.test(txt)) { const f = COLORS.find(c => txt.includes(c.split(' ')[0])); if (f) color = f; }
+      const nums = r.t.filter(t => /^\d+(\.\d+)?$/.test(t.s));
+      const len = nums.find(t => /^\d{4}$/.test(t.s) && +t.s >= 3000 && +t.s <= 7500); if (!len) return;
+      const left = nums.filter(t => t.x < len.x).sort((a, b) => b.x - a.x); const qty = left[0];
+      if (!qty || !/^\d+$/.test(qty.s) || +qty.s <= 0) return;
+      const right = nums.filter(t => t !== len && t.x > len.x).sort((a, b) => a.x - b.x);
+      const code = right.find(t => WN[np(t.s)]);
+      if (code) lines.push({ p: code.s, n: +qty.s });
+      else { const cand = right.find(t => t.s.length >= 3); unknown.push(cand ? cand.s : txt); }
+    });
+  }
+  return { lines, unknown, ref, color };
+}
+document.getElementById('mvFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  const msg = document.getElementById('mvMsg'); msg.textContent = 'קורא את ההזמנה…';
+  try {
+    const r = await parseAlkal(new Uint8Array(await f.arrayBuffer()));
+    r.lines.forEach(l => mvAddLine(l.p, l.n));
+    if (r.ref && !document.getElementById('mvRef').value) document.getElementById('mvRef').value = r.ref;
+    if (r.color) document.getElementById('mvColor').value = r.color;
+    document.getElementById('mvWarn').innerHTML = r.unknown.length ? `<div class="warnbox">לא זוהו בשורות: ${r.unknown.join(', ')}. הוסף אותם ידנית אם צריך.</div>` : '';
+    msg.textContent = r.lines.length ? `נקראו ${r.lines.length} שורות${r.ref ? ' מהזמנה ' + r.ref : ''}. בדוק את הצבע והכמויות ואשר.` : 'לא מצאתי שורות עם כמות בקובץ הזה.';
+    mvRender();
+  } catch (err) { msg.textContent = 'לא הצלחתי לקרוא את ה-PDF. צריך אינטרנט בפעם הראשונה.'; }
+};
+document.getElementById('mvOk').onclick = async () => {
+  const lines = MV.lines.filter(l => l.n > 0); if (!lines.length) return;
+  const color = document.getElementById('mvColor').value, user = document.getElementById('mvUser').value.trim();
+  try { localStorage.setItem('alum-user', user); } catch (e) { }
+  const btn = document.getElementById('mvOk'), msg = document.getElementById('mvMsg'); btn.disabled = true; msg.textContent = 'שומר בגיליון…';
+  try {
+    applyServer(await apiPost({ action: MV.type, color, ref: document.getElementById('mvRef').value.trim(), user,
+      items: lines.map(l => ({ p: l.p, n: l.n, d: (WN[np(l.p)] || {}).d || l.d || '', s: (WN[np(l.p)] || {}).s || '' })) }));
+    UI.color = color; saveInv();
+    document.getElementById('move').hidden = true;
+    const c = COLORS.indexOf(color);
+    const nowLow = lines.filter(l => stockOf(l.p, c) < minOf(l.p)).map(l => l.p);
+    setStatus((MV.type === 'out' ? 'ירד מהמלאי' : 'נוסף למלאי') + (nowLow.length ? ` · מתחת למינימום: ${nowLow.join(', ')}` : ''), nowLow.length > 0);
+    render(); renderColors();
+  } catch (err) { btn.disabled = false; msg.textContent = 'השמירה נכשלה. בדוק אינטרנט ונסה שוב. שום דבר לא ירד מהמלאי.'; }
+};
+
+// ---- modes ----
+function renderColors() {
+  const el = document.getElementById('colors');
+  el.innerHTML = COLORS.map(c => { const n = lowList(COLORS.indexOf(c)).length; return `<button class="chip" data-c="${c}" aria-pressed="${c === UI.color}">${c}${n ? ` · ${n}` : ''}</button>`; }).join('') +
+    `<button class="chip" id="lowOnly" aria-pressed="${UI.lowOnly}">רק חוסרים</button>`;
+}
+document.getElementById('colors').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'lowOnly') { UI.lowOnly = !UI.lowOnly; } else if (b.dataset.c) { if (UI.counting && Object.keys(UI.cnt).length) return; UI.color = b.dataset.c; saveInv(); }
+  renderColors(); render();
+});
+function setMode(m) {
+  UI.mode = m; saveInv();
+  document.querySelectorAll('#modes .chip').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m));
+  document.getElementById('colors').hidden = m !== 'inv';
+  document.getElementById('onlyOn').hidden = m === 'inv';
+  document.getElementById('ibarWrap').hidden = m !== 'inv';
+  document.getElementById('obarWrap').hidden = m === 'inv';
+  document.getElementById('htitle').textContent = m === 'inv' ? 'מלאי מחסן' : 'הזמנה לספק';
+  if (m === 'inv') renderColors();
+}
+document.getElementById('modes').addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (!b) return; if (b.dataset.m === 'inv' && !API) { alert('המלאי עוד לא מחובר לגיליון.'); return; } UI.counting = false; setMode(b.dataset.m); render(); window.scrollTo(0, 0); });
+
+function render(){ if(UI.mode==='inv') renderInv(); else renderOrder(); }
+setMode(UI.mode); render(); sync();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 </script>
 
