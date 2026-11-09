@@ -555,7 +555,7 @@ document.getElementById('modes').addEventListener('click', e => { const b = e.ta
 
 function render(){ if(UI.mode==='inv') renderInv(); else renderOrder(); }
 setMode(UI.mode); render(); sync();
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').then(r=>{r.update();r.addEventListener('updatefound',()=>{const w=r.installing;w&&w.addEventListener('statechange',()=>{if(w.state==='activated'&&navigator.serviceWorker.controller)location.reload();});});});}
 </script>
 
 </body></html>
