@@ -1,4 +1,4 @@
-import { ChevronLeft, Dices, UtensilsCrossed, Volleyball, Wine, X } from 'lucide-react'
+import { ChevronLeft, Dices, GraduationCap, Sparkles, UtensilsCrossed, Volleyball, Wine, X } from 'lucide-react'
 import { useEffect } from 'react'
 import { useT } from '../i18n/index.jsx'
 import { useStore } from '../state/store.jsx'
@@ -57,13 +57,16 @@ export function Tag({ children, tone = 'cream' }) {
 
 // ── Activity types ───────────────────────────────────────────────────────
 
-export const TYPE_ICONS = { bar: Wine, restaurant: UtensilsCrossed, boardgames: Dices, sports: Volleyball }
+export const TYPE_ICONS = { bar: Wine, restaurant: UtensilsCrossed, boardgames: Dices, sports: Volleyball, class: GraduationCap, other: Sparkles }
+export const ALL_TYPES = ['bar', 'restaurant', 'boardgames', 'sports', 'class', 'other']
 
 const TYPE_TILE = {
   bar: 'bg-honey-100 text-honey-800',
   restaurant: 'bg-clay-100 text-clay-700',
   boardgames: 'bg-plum-100 text-plum-700',
   sports: 'bg-pine-100 text-pine-800',
+  class: 'bg-honey-100 text-honey-800',
+  other: 'bg-cream-200 text-ink',
 }
 
 export function TypeTile({ type, size = 48 }) {

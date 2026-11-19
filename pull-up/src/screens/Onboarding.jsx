@@ -1,22 +1,11 @@
-import { ArrowRight, Check, DoorOpen, FastForward, Flag, ScanFace } from 'lucide-react'
+import { ArrowRight, DoorOpen, Flag, LoaderCircle, ScanFace, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
-import Avatar from '../components/Avatar.jsx'
 import { Logo } from '../components/Shell.jsx'
-import { Button, DemoControl, SAFE_TOP, TYPE_ICONS } from '../components/ui.jsx'
-import { TYPES } from '../data/venues.js'
+import { Button, SAFE_TOP } from '../components/ui.jsx'
 import { LanguageSwitch, useT } from '../i18n/index.jsx'
-import { useStore } from '../state/store.jsx'
-
-const AVATARS = [
-  { skin: 3, hair: 'curly', hairColor: '#3b2a20', bg: '#f5b544', shirt: '#0f3b2d' },
-  { skin: 2, hair: 'long', hairColor: '#4a2f1d', bg: '#fadfd3', shirt: '#d5633b' },
-  { skin: 2, hair: 'short', hairColor: '#231a15', bg: '#dcebe2', shirt: '#14503c', beard: true },
-  { skin: 3, hair: 'hijab', hairColor: '#1b6a4e', bg: '#fdecc8', shirt: '#14503c' },
-  { skin: 1, hair: 'bob', hairColor: '#d8b25a', bg: '#ecdff2', shirt: '#5b3a70', glasses: true },
-  { skin: 4, hair: 'buzz', hairColor: '#1d1512', bg: '#fdecc8', shirt: '#b94a26' },
-  { skin: 3, hair: 'bun', hairColor: '#1d1512', bg: '#dcebe2', shirt: '#23845f' },
-  { skin: 1, hair: 'short', hairColor: '#b0672d', bg: '#fadfd3', shirt: '#963a1c', glasses: true },
-]
+import { useAuth } from '../state/auth.jsx'
+import Legal from './account/Legal.jsx'
+import { AgeField, AvatarField, GenderField, InterestsField, LanguagesField, NameField, emptyForm, missingBasics } from './account/fields.jsx'
 
 function TrustPoint({ icon: Icon, title, children }) {
   return (
@@ -27,19 +16,32 @@ function TrustPoint({ icon: Icon, title, children }) {
   )
 }
 
+/** Three steps: who you are, what you are up for, and how trust works. Saved only at the end. */
 export default function Onboarding() {
-  const { dispatch } = useStore()
-  const { t } = useT()
+  const auth = useAuth()
+  const { t, lang } = useT()
   const [step, setStep] = useState(0)
-  const [name, setName] = useState('')
-  const [avatar, setAvatar] = useState(0)
-  const [interests, setInterests] = useState([])
+  const [form, setForm] = useState(() => emptyForm(lang))
   const [adult, setAdult] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const [legal, setLegal] = useState(false)
+  const set = (patch) => setForm((f) => ({ ...f, ...patch }))
 
-  const finish = () =>
-    dispatch({ type: 'ONBOARD', me: { firstName: name.trim() || t('common.you'), avatar: AVATARS[avatar], interests } })
+  const step1Missing = !form.firstName.trim() ? 'about.needName' : !form.ageRange ? 'about.needAge' : null
+  const step2Missing = form.languages.length === 0 ? 'about.needLanguage' : null
 
-  const toggle = (id) => setInterests((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]))
+  const finish = async () => {
+    if (missingBasics(form) || !adult || saving) return
+    setSaving(true)
+    setError(null)
+    try {
+      await auth.saveOnboarding({ ...form, locale: lang, adult }, auth.config?.terms_version)
+    } catch (e) {
+      setError(e.key || 'errors.generic')
+      setSaving(false)
+    }
+  }
 
   return (
     <div className="absolute inset-0 z-30 flex flex-col bg-cream-50">
@@ -63,63 +65,18 @@ export default function Onboarding() {
       <main className="flex-1 overflow-y-auto px-5 py-5">
         {step === 0 && (
           <>
-            <label htmlFor="first-name" className="block text-base font-semibold text-pine-950">{t('onboarding.name')}</label>
-            <input
-              id="first-name"
-              dir={name ? 'auto' : undefined}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={30}
-              autoComplete="given-name"
-              enterKeyHint="next"
-              placeholder={t('onboarding.namePlaceholder')}
-              className="mt-2 min-h-[56px] w-full rounded-2xl border-2 border-cream-300 bg-white px-4 text-lg focus:border-pine-700 focus:outline-none"
-            />
-            <p className="mt-6 text-base font-semibold text-pine-950">{t('onboarding.picture')}</p>
-            <div className="mt-3 grid grid-cols-4 gap-3" role="radiogroup" aria-label={t('onboarding.avatar')}>
-              {AVATARS.map((a, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  role="radio"
-                  aria-checked={avatar === i}
-                  aria-label={t('onboarding.avatarN', { n: i + 1 })}
-                  onClick={() => setAvatar(i)}
-                  className={`relative flex aspect-square items-center justify-center rounded-full ${avatar === i ? 'ring-4 ring-pine-900 ring-offset-2 ring-offset-cream-50' : ''}`}
-                >
-                  <Avatar spec={a} size={68} />
-                  {avatar === i && (
-                    <span className="absolute -bottom-1 -end-1 flex h-6 w-6 items-center justify-center rounded-full bg-pine-900 text-cream-50"><Check size={15} strokeWidth={3} aria-hidden="true" /></span>
-                  )}
-                </button>
-              ))}
-            </div>
+            <NameField form={form} set={set} />
+            <AvatarField form={form} set={set} />
+            <AgeField form={form} set={set} />
           </>
         )}
 
         {step === 1 && (
-          <div className="space-y-3">
-            {Object.keys(TYPES).map((id) => {
-              const Icon = TYPE_ICONS[id]
-              const on = interests.includes(id)
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => toggle(id)}
-                  className={`flex min-h-[76px] w-full items-center gap-4 rounded-3xl border-2 p-4 text-start ${on ? 'border-pine-900 bg-pine-50' : 'border-cream-300 bg-white'}`}
-                >
-                  <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${on ? 'bg-pine-900 text-cream-50' : 'bg-cream-100 text-ink'}`}><Icon size={24} aria-hidden="true" /></span>
-                  <span className="flex-1">
-                    <span className="block text-lg font-semibold text-pine-950">{t(`types.${id}`)}</span>
-                    <span className="block text-[15px] text-ink-soft">{t(`onboarding.h_${id}`)}</span>
-                  </span>
-                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 ${on ? 'border-pine-900 bg-pine-900 text-cream-50' : 'border-cream-300'}`}>{on && <Check size={16} strokeWidth={3} aria-hidden="true" />}</span>
-                </button>
-              )
-            })}
-          </div>
+          <>
+            <InterestsField form={form} set={set} large />
+            <LanguagesField form={form} set={set} />
+            <GenderField form={form} set={set} />
+          </>
         )}
 
         {step === 2 && (
@@ -136,6 +93,15 @@ export default function Onboarding() {
                 <span className="block text-sm text-ink-soft">{t('onboarding.adultHint')}</span>
               </span>
             </label>
+            <p className="mt-3 text-sm text-ink-soft">
+              {t('legal.accept')}{' '}
+              <button type="button" onClick={() => setLegal(true)} className="min-h-[32px] font-semibold text-pine-800 underline underline-offset-4">{t('auth.legal')}</button>
+            </p>
+            {error && (
+              <p role="alert" className="mt-4 flex items-start gap-2 rounded-2xl bg-clay-100 p-3 text-[15px] font-medium text-clay-700">
+                <TriangleAlert size={18} className="mt-0.5 shrink-0" aria-hidden="true" /> {t(error)}
+              </p>
+            )}
           </>
         )}
       </main>
@@ -143,29 +109,31 @@ export default function Onboarding() {
       <footer className="shrink-0 space-y-2 border-t border-cream-200 px-5 pt-3" style={{ paddingBottom: 'calc(var(--safe-bottom) + 14px)' }}>
         {step === 0 && (
           <>
-            <Button variant="accent" icon={ArrowRight} flipIcon disabled={!name.trim()} onClick={() => setStep(1)}>
-              {name.trim() ? t('common.continue') : t('onboarding.enterName')}
+            <Button variant="accent" icon={ArrowRight} flipIcon disabled={!!step1Missing} onClick={() => setStep(1)}>
+              {step1Missing ? t(step1Missing) : t('common.continue')}
             </Button>
-            <DemoControl icon={FastForward} onClick={finish}>{t('onboarding.skip')}</DemoControl>
+            <Button variant="ghost" onClick={auth.signOut}>{t('auth.signOut')}</Button>
           </>
         )}
         {step === 1 && (
           <>
-            <Button variant="accent" icon={ArrowRight} flipIcon onClick={() => setStep(2)}>
-              {interests.length ? t('common.continue') : t('onboarding.continueNone')}
+            <Button variant="accent" icon={ArrowRight} flipIcon disabled={!!step2Missing} onClick={() => setStep(2)}>
+              {step2Missing ? t(step2Missing) : t('common.continue')}
             </Button>
             <Button variant="ghost" onClick={() => setStep(0)}>{t('common.back')}</Button>
           </>
         )}
         {step === 2 && (
           <>
-            <Button variant="accent" icon={ArrowRight} flipIcon disabled={!adult} onClick={finish}>
-              {adult ? t('onboarding.finish') : t('onboarding.confirmAdult')}
+            <Button variant="accent" icon={saving ? LoaderCircle : ArrowRight} flipIcon={!saving} disabled={!adult || saving} onClick={finish} className={saving ? '[&>svg]:animate-spin' : ''}>
+              {saving ? t('about.saving') : adult ? t('onboarding.finish') : t('onboarding.confirmAdult')}
             </Button>
-            <Button variant="ghost" onClick={() => setStep(1)}>{t('common.back')}</Button>
+            <Button variant="ghost" disabled={saving} onClick={() => setStep(1)}>{t('common.back')}</Button>
           </>
         )}
       </footer>
+
+      {legal && <Legal onBack={() => setLegal(false)} />}
     </div>
   )
 }

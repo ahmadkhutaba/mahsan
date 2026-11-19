@@ -212,7 +212,7 @@ function reducer(state, action) {
     }
 
     case 'RESET':
-      return { ...createInitialState(), seq: state.seq + 1, toast: { id: state.seq, key: 'toast.reset' } }
+      return { ...createInitialState(), me: state.me, onboarded: state.onboarded, seq: state.seq + 1, toast: { id: state.seq, key: 'toast.reset' } }
     default:
       return state
   }

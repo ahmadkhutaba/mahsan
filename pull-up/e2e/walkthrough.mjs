@@ -17,7 +17,9 @@ const browser = await chromium.launch()
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: lang === 'he' ? 'he-IL' : 'en-GB' })
 const page = await context.newPage()
 const errors = []
-page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
+// The local test login tries "sign in" and falls back to "sign up"; the first attempt's 400 is expected.
+let testLogin = false
+page.on('console', (m) => m.type() === 'error' && !(testLogin && /status of 4\d\d/.test(m.text())) && errors.push(m.text()))
 page.on('console', (m) => m.type() === 'warning' && m.text().includes('[i18n]') && errors.push(m.text()))
 page.on('pageerror', (e) => errors.push('PAGEERROR ' + e.message))
 
@@ -50,24 +52,45 @@ await page.evaluate((l) => localStorage.setItem('pullup.lang', l), lang)
 await page.reload()
 check(`document direction is ${lang === 'he' ? 'rtl' : 'ltr'}`, (await page.locator('.phone').getAttribute('dir')) === (lang === 'he' ? 'rtl' : 'ltr'))
 
+// ── sign in (local test login; Google sign-in is checked by hand on a real phone) ──
+await shot('sign-in'); await noOverflow('sign in')
+const email = `walk-${lang}-${Date.now()}@test.local`
+await page.getByLabel(t('auth.testEmail')).fill(email)
+await page.getByLabel(t('auth.testPassword')).fill('test-password-123')
+testLogin = true
+await click(t('auth.testGo'), true)
+
 // ── onboarding ──
+const NAME = lang === 'he' ? 'דנה' : 'Dana'
+await page.getByLabel(t('onboarding.name')).waitFor()
+testLogin = false
 await shot('onboarding-1')
-check('continue is disabled without a name', await button(t('onboarding.enterName')).isDisabled())
-await page.getByLabel(t('onboarding.name')).fill(lang === 'he' ? 'דנה' : 'Dana')
+check('continue is disabled without a name', await button(t('about.needName')).isDisabled())
+await page.getByLabel(t('onboarding.name')).fill(NAME)
 // switching language keeps what was typed
 const other = lang === 'he' ? 'English' : 'עברית'
 await page.locator('.phone').getByRole('button', { name: other, exact: true }).click()
 await page.locator('.phone').getByRole('button', { name: lang === 'he' ? 'עברית' : 'English', exact: true }).click()
-check('typed name survives a language switch', (await page.getByLabel(t('onboarding.name')).inputValue()) === (lang === 'he' ? 'דנה' : 'Dana'))
+check('typed name survives a language switch', (await page.getByLabel(t('onboarding.name')).inputValue()) === NAME)
 await page.getByRole('radio', { name: t('onboarding.avatarN', { n: 2 }) }).click()
+check('continue is disabled without an age range', await button(t('about.needAge')).isDisabled())
+await click('25–29', true)
+await noOverflow('onboarding 1')
 await click(t('common.continue'), true)
 await click(t('types.boardgames'))
+await click(t('genders.woman'), true)
 await shot('onboarding-2'); await noOverflow('onboarding 2')
 await click(t('common.continue'), true)
 await shot('onboarding-3'); await noOverflow('onboarding 3')
 check('finish is disabled until the 18+ box is ticked', await button(t('onboarding.confirmAdult')).isDisabled())
 await page.getByRole('checkbox').check()
 await click(t('onboarding.finish'))
+await page.getByRole('heading', { name: t('home.title') }).waitFor()
+
+// ── the profile is saved: a reload keeps the session and skips onboarding ──
+await page.reload()
+await page.getByRole('heading', { name: t('home.title') }).waitFor()
+check('a reload keeps the session and the saved profile', true)
 
 // ── home, filters, empty state ──
 await shot('home'); await noOverflow('home')
@@ -155,6 +178,30 @@ await page.getByRole('button', { name: /Lia/ }).click()
 await shot('joiner'); await noOverflow('joiner profile')
 await click(t('joiner.accept'), true)
 await shot('host-after')
+
+// ── profile: edit, legal, sign out, sign back in ──
+await click(t('tabs.profile'), true)
+check('profile shows the saved name', (await page.locator('main').innerText()).includes(NAME))
+await click(t('about.edit'))
+await page.getByLabel(t('onboarding.name')).fill(NAME + ' B')
+await shot('edit-profile'); await noOverflow('edit profile')
+await click(t('about.save'), true)
+await page.locator('main').getByText(NAME + ' B').waitFor()
+check('an edited name is saved and shown', true)
+await click(t('auth.legal'))
+await shot('legal'); await noOverflow('legal')
+await click(t('common.back'), true)
+await click(t('auth.signOut'))
+await page.getByLabel(t('auth.testEmail')).waitFor()
+check('signing out returns to the sign-in screen', true)
+await page.getByLabel(t('auth.testEmail')).fill(email)
+await page.getByLabel(t('auth.testPassword')).fill('test-password-123')
+testLogin = true
+await click(t('auth.testGo'), true)
+await button(t('tabs.profile'), true).waitFor()
+testLogin = false
+await click(t('tabs.profile'), true)
+check('signing back in goes straight to the app with the same profile', (await page.locator('main').innerText()).includes(NAME + ' B'))
 } catch (e) {
   if (shots) await page.screenshot({ path: `${shots}/${lang}-FAILED.png` })
   console.error(String(e).split('\n').slice(0, 4).join('\n'))
