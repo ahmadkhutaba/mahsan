@@ -9,11 +9,14 @@
     "preview": "vite preview",
     "db:start": "supabase db start",
     "db:reset": "supabase db reset",
-    "test:db": "node --test --test-concurrency=1 \"supabase/tests/*.test.mjs\""
+    "test:db": "node --test --test-concurrency=1 \"supabase/tests/*.test.mjs\"",
+    "test:i18n": "node scripts/check-i18n.mjs"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource-variable/frank-ruhl-libre": "^5.3.0",
     "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/heebo": "^5.3.0",
     "lucide-react": "^1.75.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"

@@ -1,8 +1,8 @@
 import { RotateCcw } from 'lucide-react'
 import Avatar from '../components/Avatar.jsx'
 import { RoleSwitch } from '../components/Shell.jsx'
-import { Card, DemoControl, SAFE_TOP, Tag, VerifiedMark } from '../components/ui.jsx'
-import { TYPES } from '../data/venues.js'
+import { Card, DemoControl, SAFE_TOP, Tag } from '../components/ui.jsx'
+import { LanguageSwitch, useT } from '../i18n/index.jsx'
 import { useStore } from '../state/store.jsx'
 
 export function TabHeader({ title, subtitle, right }) {
@@ -19,39 +19,40 @@ export function TabHeader({ title, subtitle, right }) {
 
 export default function Profile() {
   const { state, dispatch } = useStore()
+  const { t, list } = useT()
   const me = state.me
 
   return (
     <div className="flex h-full flex-col">
-      <TabHeader title="Profile" subtitle="What groups and guests see about you" />
+      <TabHeader title={t('profile.title')} subtitle={t('profile.subtitle')} />
       <main className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
         <Card className="flex items-center gap-4">
           <Avatar id="me" size={72} />
           <div className="min-w-0">
-            <p className="flex items-center gap-1.5 font-display text-2xl font-semibold text-pine-950">
-              {me.firstName} <VerifiedMark verified={me.verified} size={22} />
-            </p>
-            <p className="text-[15px] text-ink-soft">{me.ageRange} · {me.languages.join(', ')}</p>
-            <p className={`text-sm font-semibold ${me.verified ? 'text-pine-700' : 'text-clay-700'}`}>
-              {me.verified ? 'ID verified' : 'Not verified yet'}
-            </p>
+            <p className="font-display text-2xl font-semibold text-pine-950"><bdi>{me.firstName}</bdi></p>
+            <p className="text-[15px] text-ink-soft">{list([me.ageRange, me.languages.map((l) => t(`langs.${l}`)).join(', ')])}</p>
           </div>
         </Card>
 
         {me.interests.length > 0 && (
           <Card>
-            <p className="mb-2 text-base font-semibold text-pine-950">Up for</p>
-            <div className="flex flex-wrap gap-2">{me.interests.map((t) => <Tag key={t} tone="honey">{TYPES[t].label}</Tag>)}</div>
+            <p className="mb-2 text-base font-semibold text-pine-950">{t('profile.upFor')}</p>
+            <div className="flex flex-wrap gap-2">{me.interests.map((id) => <Tag key={id} tone="honey">{t(`types.${id}`)}</Tag>)}</div>
           </Card>
         )}
 
         <Card>
-          <p className="mb-2 text-base font-semibold text-pine-950">Tonight I am</p>
+          <p className="mb-2 text-base font-semibold text-pine-950">{t('profile.tonightIam')}</p>
           <RoleSwitch />
         </Card>
 
-        <DemoControl icon={RotateCcw} onClick={() => dispatch({ type: 'RESET' })}>Reset for the next tester</DemoControl>
-        <p className="px-2 text-center text-sm text-ink-soft">Prototype with mock data. Nothing is saved or sent.</p>
+        <Card className="flex items-center justify-between gap-3">
+          <p className="text-base font-semibold text-pine-950">{t('app.language')}</p>
+          <LanguageSwitch />
+        </Card>
+
+        <DemoControl icon={RotateCcw} onClick={() => dispatch({ type: 'RESET' })}>{t('profile.reset')}</DemoControl>
+        <p className="px-2 text-center text-sm text-ink-soft">{t('profile.note')}</p>
       </main>
     </div>
   )

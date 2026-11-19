@@ -1,19 +1,8 @@
 import { ME, peopleById } from '../data/people.js'
 import { venuesById } from '../data/venues.js'
 
-export const TIME_OPTIONS = [
-  { id: 'any', label: 'Any time' },
-  { id: 'early', label: 'Before 20:00' },
-  { id: 'prime', label: '20:00 – 22:00' },
-  { id: 'late', label: 'After 22:00' },
-]
-
-export const DISTANCE_OPTIONS = [
-  { id: null, label: 'Any distance' },
-  { id: 1, label: 'Up to 1 km' },
-  { id: 3, label: 'Up to 3 km' },
-  { id: 5, label: 'Up to 5 km' },
-]
+export const TIME_OPTIONS = ['any', 'early', 'prime', 'late']
+export const DISTANCE_OPTIONS = [null, 1, 3, 5]
 
 export const EMPTY_FILTERS = { types: [], time: 'any', maxKm: null }
 
@@ -45,20 +34,15 @@ export function visibleSpots(spots, city, filters) {
     .sort((a, b) => minutes(a.startTime) - minutes(b.startTime))
 }
 
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`
-
-/** "2 women · 1 man", computed from the members so it always matches the avatars. */
+/** Counts behind "2 women · 1 man". Computed from the members so it always matches the avatars. */
 export function groupMix(memberIds) {
   const others = memberIds.filter((id) => id !== ME).map((id) => peopleById[id])
-  const women = others.filter((p) => p.gender === 'woman').length
-  const men = others.filter((p) => p.gender === 'man').length
-  const nb = others.filter((p) => p.gender === 'nonbinary').length
-  const parts = []
-  if (memberIds.includes(ME)) parts.push('You')
-  if (women) parts.push(plural(women, 'woman', 'women'))
-  if (men) parts.push(plural(men, 'man', 'men'))
-  if (nb) parts.push(`${nb} non-binary`)
-  return parts.join(' · ')
+  return {
+    you: memberIds.includes(ME),
+    women: others.filter((p) => p.gender === 'woman').length,
+    men: others.filter((p) => p.gender === 'man').length,
+    nonbinary: others.filter((p) => p.gender === 'nonbinary').length,
+  }
 }
 
 /** Languages spoken in the group, most common first. */
@@ -70,24 +54,12 @@ export function groupLanguages(memberIds) {
     .map(([lang, n]) => ({ lang, everyone: n === memberIds.length }))
 }
 
-export function verifiedSummary(memberIds, get = (id) => peopleById[id]) {
-  const verified = memberIds.filter((id) => get(id).verified).length
-  const total = memberIds.length
-  return { verified, total, all: verified === total, label: verified === total ? 'All verified' : `${verified} of ${total} verified` }
-}
-
 export const ACTIVE_STATUSES = ['pending', 'accepted', 'attended', 'declined']
 
 /** The tester's current request for a spot, if any. */
 export function myRequestFor(requests, spotId) {
   return requests.find((r) => r.personId === ME && r.spotId === spotId && ACTIVE_STATUSES.includes(r.status))
 }
-
-export const openLabel = (n) => (n <= 0 ? 'Full' : n === 1 ? '1 spot open' : `${n} spots open`)
-
-export const km = (d) => (d < 1 ? `${Math.round(d * 1000)} m` : `${d.toFixed(1)} km`)
-
-export const possessive = (name) => (name.endsWith('s') ? `${name}’` : `${name}’s`)
 
 // The prototype always starts at 17:42 on the evening in question, so mock times stay believable
 // whenever the test session really takes place.

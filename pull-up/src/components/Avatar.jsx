@@ -93,14 +93,14 @@ export function AvatarStack({ ids, size = 32, max = 5 }) {
   return (
     <div className="flex items-center">
       {shown.map((id, i) => (
-        <span key={id} style={{ marginLeft: i === 0 ? 0 : -size * 0.28 }}>
+        <span key={id} style={{ marginInlineStart: i === 0 ? 0 : -size * 0.28 }}>
           <Avatar id={id} size={size} ring />
         </span>
       ))}
       {extra > 0 && (
         <span
           className="flex items-center justify-center rounded-full bg-cream-200 text-xs font-semibold text-ink ring-2 ring-cream-50"
-          style={{ width: size, height: size, marginLeft: -size * 0.28 }}
+          style={{ width: size, height: size, marginInlineStart: -size * 0.28 }}
         >
           +{extra}
         </span>

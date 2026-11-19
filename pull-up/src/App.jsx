@@ -14,6 +14,7 @@ import Rating from './screens/joiner/Rating.jsx'
 import RequestSheet from './screens/joiner/RequestSheet.jsx'
 import SafetySheet from './screens/joiner/SafetySheet.jsx'
 import SpotDetails from './screens/joiner/SpotDetails.jsx'
+import { I18nProvider } from './i18n/index.jsx'
 import { StoreProvider, useStore } from './state/store.jsx'
 
 const TAB_VIEWS = { home: Home, plans: MyPlans, profile: Profile, spots: MySpots, requests: Requests }
@@ -55,11 +56,13 @@ function Router() {
 
 export default function App() {
   return (
-    <StoreProvider>
-      <PhoneFrame>
-        <Router />
-        <Toast />
-      </PhoneFrame>
-    </StoreProvider>
+    <I18nProvider>
+      <StoreProvider>
+        <PhoneFrame>
+          <Router />
+          <Toast />
+        </PhoneFrame>
+      </StoreProvider>
+    </I18nProvider>
   )
 }

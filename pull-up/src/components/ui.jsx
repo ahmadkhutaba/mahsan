@@ -1,5 +1,6 @@
-import { BadgeCheck, ChevronLeft, Dices, UtensilsCrossed, Volleyball, Wine, X } from 'lucide-react'
+import { ChevronLeft, Dices, UtensilsCrossed, Volleyball, Wine, X } from 'lucide-react'
 import { useEffect } from 'react'
+import { useT } from '../i18n/index.jsx'
 import { useStore } from '../state/store.jsx'
 
 // ── Buttons ──────────────────────────────────────────────────────────────
@@ -14,14 +15,14 @@ const BUTTON_STYLES = {
   ghost: 'text-pine-800 active:bg-pine-50',
 }
 
-export function Button({ variant = 'primary', icon: Icon, children, className = '', ...props }) {
+export function Button({ variant = 'primary', icon: Icon, flipIcon = false, children, className = '', ...props }) {
   return (
     <button
       type="button"
       className={`flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl px-5 text-base font-semibold transition-colors ${BUTTON_STYLES[variant]} ${className}`}
       {...props}
     >
-      {Icon && <Icon size={20} strokeWidth={2.2} aria-hidden="true" />}
+      {Icon && <Icon size={20} strokeWidth={2.2} className={flipIcon ? 'rtl:-scale-x-100' : ''} aria-hidden="true" />}
       {children}
     </button>
   )
@@ -69,24 +70,10 @@ export function TypeTile({ type, size = 48 }) {
   const Icon = TYPE_ICONS[type]
   return (
     <span
-      className={`flex shrink-0 items-center justify-center rounded-2xl ${TYPE_TILE[type]}`}
+      className={`flex shrink-0 items-center justify-center rounded-2xl ${TYPE_TILE[type] || 'bg-cream-100 text-ink-soft'}`}
       style={{ width: size, height: size }}
     >
-      <Icon size={size * 0.48} strokeWidth={2} aria-hidden="true" />
-    </span>
-  )
-}
-
-// ── Verification ─────────────────────────────────────────────────────────
-
-export function VerifiedMark({ verified, size = 18, withLabel = false }) {
-  if (!verified) {
-    return withLabel ? <span className="text-sm font-medium text-ink-soft">Not verified yet</span> : null
-  }
-  return (
-    <span className="inline-flex items-center gap-1 text-pine-700">
-      <BadgeCheck size={size} strokeWidth={2.4} aria-label="Verified" />
-      {withLabel && <span className="text-sm font-semibold">Verified</span>}
+      {Icon && <Icon size={size * 0.48} strokeWidth={2} aria-hidden="true" />}
     </span>
   )
 }
@@ -96,16 +83,17 @@ export function VerifiedMark({ verified, size = 18, withLabel = false }) {
 /** Top padding that clears the phone status bar (frame) or the device safe area. */
 export const SAFE_TOP = { paddingTop: 'calc(var(--safe-top) + 10px)' }
 
-export function BackButton({ onClick, label = 'Back' }) {
+export function BackButton({ onClick }) {
   const { dispatch } = useStore()
+  const { t } = useT()
   return (
     <button
       type="button"
-      aria-label={label}
+      aria-label={t('common.back')}
       onClick={onClick || (() => dispatch({ type: 'POP' }))}
-      className="-ml-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-cream-50 active:bg-white/10"
+      className="-ms-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-cream-50 active:bg-white/10"
     >
-      <ChevronLeft size={28} aria-hidden="true" />
+      <ChevronLeft size={28} className="rtl:-scale-x-100" aria-hidden="true" />
     </button>
   )
 }
@@ -139,6 +127,7 @@ export function Screen({ title, subtitle, onBack, right, header, footer, childre
 /** Bottom sheet rendered inside the phone frame. */
 export function Sheet({ title, onClose, children, footer }) {
   const { dispatch } = useStore()
+  const { t } = useT()
   const close = onClose || (() => dispatch({ type: 'CLOSE_SHEET' }))
 
   useEffect(() => {
@@ -149,15 +138,15 @@ export function Sheet({ title, onClose, children, footer }) {
 
   return (
     <div className="absolute inset-0 z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label={title}>
-      <button type="button" aria-label="Close" onClick={close} className="anim-fade absolute inset-0 bg-pine-950/60" />
+      <button type="button" aria-label={t('common.close')} tabIndex={-1} onClick={close} className="anim-fade absolute inset-0 bg-pine-950/60" />
       <div className="anim-sheet relative flex max-h-[90%] flex-col rounded-t-[28px] bg-cream-50 shadow-2xl">
         <div className="flex shrink-0 items-center justify-between gap-3 px-5 pb-2 pt-4">
           <h2 className="font-display text-[22px] font-semibold leading-tight text-pine-950">{title}</h2>
           <button
             type="button"
-            aria-label="Close"
+            aria-label={t('common.close')}
             onClick={close}
-            className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-cream-100 text-ink active:bg-cream-200"
+            className="-me-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-cream-100 text-ink active:bg-cream-200"
           >
             <X size={22} aria-hidden="true" />
           </button>
@@ -187,16 +176,34 @@ export function Card({ children, className = '', ...props }) {
 
 /** Things in the prototype that are stand-ins for the facilitator, not product UI. */
 export function DemoControl({ children, onClick, icon: Icon }) {
+  const { t } = useT()
   return (
     <button
       type="button"
       onClick={onClick}
       className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-cream-300 px-4 text-sm font-semibold text-ink-soft active:bg-cream-100"
     >
-      {Icon && <Icon size={18} aria-hidden="true" />}
+      {Icon && <Icon size={18} className="rtl:-scale-x-100" aria-hidden="true" />}
       <span>
-        <span className="mr-1 rounded bg-cream-200 px-1.5 py-0.5 text-[11px] uppercase tracking-wide">Demo</span> {children}
+        <span className="me-1 rounded bg-cream-200 px-1.5 py-0.5 text-[11px] uppercase tracking-wide">{t('common.demo')}</span> {children}
       </span>
     </button>
   )
+}
+
+/** "2 women · 1 man" from the counts in helpers.groupMix. */
+export function useMixText() {
+  const { t, list } = useT()
+  return (mix) =>
+    list([
+      mix.you && t('common.you'),
+      mix.women > 0 && t('mix.women', { count: mix.women }),
+      mix.men > 0 && t('mix.men', { count: mix.men }),
+      mix.nonbinary > 0 && t('mix.nonbinary', { count: mix.nonbinary }),
+    ])
+}
+
+export function useOpenLabel() {
+  const { t } = useT()
+  return (n) => (n <= 0 ? t('spot.full') : t('spot.open', { count: n }))
 }

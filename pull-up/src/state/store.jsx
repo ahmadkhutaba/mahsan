@@ -31,7 +31,7 @@ const clockNow = demoClock
 const patch = (list, id, fn) => list.map((x) => (x.id === id ? { ...x, ...fn(x) } : x))
 
 function reducer(state, action) {
-  const toast = (text, go) => ({ id: state.seq, text, go })
+  const toast = (key, vars, go) => ({ id: state.seq, key, vars, go })
   const next = { ...state, seq: state.seq + 1 }
 
   switch (action.type) {
@@ -59,7 +59,7 @@ function reducer(state, action) {
     case 'FILTERS':
       return { ...state, filters: action.filters }
     case 'TOAST':
-      return { ...next, toast: toast(action.text) }
+      return { ...next, toast: toast(action.key, action.vars) }
     case 'CLEAR_TOAST':
       return state.toast?.id === action.id ? { ...state, toast: null } : state
 
@@ -91,7 +91,7 @@ function reducer(state, action) {
         return {
           ...next,
           requests: patch(state.requests, req.id, () => ({ status: 'declined' })),
-          toast: watching ? state.toast : toast(`${host.firstName} answered your request`, go),
+          toast: watching ? state.toast : toast('toast.answered', { name: host.firstName }, go),
         }
       }
       return {
@@ -101,11 +101,11 @@ function reducer(state, action) {
           openSpots: Math.max(0, s.openSpots - 1),
           chat: [
             ...s.chat,
-            { system: true, text: 'You joined the group' },
+            { system: true, key: 'chat.joined' },
             { fromId: spot.hostId, text: `Welcome! See you at ${spot.startTime} 👋`, time: clockNow() },
           ],
         })),
-        toast: watching ? state.toast : toast(`${host.firstName} accepted your request`, go),
+        toast: watching ? state.toast : toast('toast.accepted', { name: host.firstName }, go),
       }
     }
     case 'CANCEL_REQUEST':
@@ -168,7 +168,7 @@ function reducer(state, action) {
         stack: [],
         sheet: null,
         tabs: { ...state.tabs, host: 'spots' },
-        toast: toast('Your spot is live'),
+        toast: toast('toast.live'),
       }
     }
     case 'INCOMING_REQUEST': {
@@ -189,7 +189,7 @@ function reducer(state, action) {
             sentAt: 'Just now',
           },
         ],
-        toast: state.role === 'host' ? toast(`${person.firstName} asked to join your spot`, { tab: 'requests' }) : state.toast,
+        toast: state.role === 'host' ? toast('toast.asked', { name: person.firstName }, { tab: 'requests' }) : state.toast,
       }
     }
     case 'HOST_DECIDE': {
@@ -207,12 +207,12 @@ function reducer(state, action) {
             }))
           : state.spots,
         stack: state.stack.slice(0, -1),
-        toast: toast(accepted ? `${person.firstName} is in. They can now see the group chat.` : `Request from ${person.firstName} declined`),
+        toast: toast(accepted ? 'toast.hostAccepted' : 'toast.hostDeclined', { name: person.firstName }),
       }
     }
 
     case 'RESET':
-      return { ...createInitialState(), seq: state.seq + 1, toast: { id: state.seq, text: 'Demo reset. Ready for the next session.' } }
+      return { ...createInitialState(), seq: state.seq + 1, toast: { id: state.seq, key: 'toast.reset' } }
     default:
       return state
   }
