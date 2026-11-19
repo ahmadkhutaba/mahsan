@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Fraunces Variable", Georgia, serif;
+  --font-sans: "DM Sans Variable", system-ui, sans-serif;
+
+  --color-pine-950: #08241b;
+  --color-pine-900: #0f3b2d;
+  --color-pine-800: #14503c;
+  --color-pine-700: #1b6a4e;
+  --color-pine-600: #23845f;
+  --color-pine-200: #bfdccb;
+  --color-pine-100: #dcebe2;
+  --color-pine-50: #eef5f0;
+
+  --color-cream-50: #fdf9f1;
+  --color-cream-100: #f8f0e1;
+  --color-cream-200: #f0e4ce;
+  --color-cream-300: #e3d3b6;
+
+  --color-honey-100: #fdecc8;
+  --color-honey-300: #f9cf7c;
+  --color-honey-400: #f5b544;
+  --color-honey-500: #ec9d24;
+  --color-honey-800: #7a4a06;
+
+  --color-clay-50: #fdf0ea;
+  --color-clay-100: #fadfd3;
+  --color-clay-500: #d5633b;
+  --color-clay-600: #b94a26;
+  --color-clay-700: #963a1c;
+
+  --color-plum-100: #ecdff2;
+  --color-plum-700: #5b3a70;
+
+  --color-ink: #1c2b24;
+  --color-ink-soft: #55655d;
+}
+
+html, body, #root { height: 100%; }
+#root { height: 100dvh; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background: var(--color-pine-950);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button { cursor: pointer; font: inherit; }
+button:disabled { cursor: not-allowed; }
+:focus-visible { outline: 3px solid var(--color-honey-400); outline-offset: 2px; }
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+@keyframes screen-in { from { transform: translateX(28px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes toast-in { from { transform: translateY(-12px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes pulse-ring { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(1.9); opacity: 0; } }
+@keyframes pop { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+
+.anim-screen { animation: screen-in .24s ease-out both; }
+.anim-sheet { animation: sheet-up .28s cubic-bezier(.2,.8,.2,1) both; }
+.anim-fade { animation: fade-in .2s ease-out both; }
+.anim-toast { animation: toast-in .25s ease-out both; }
+.anim-ring { animation: pulse-ring 1.8s ease-out infinite; }
+.anim-pop { animation: pop .45s cubic-bezier(.2,.8,.2,1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-screen, .anim-sheet, .anim-fade, .anim-toast, .anim-pop { animation: none; }
+  .anim-ring { animation: none; opacity: .25; }
+}
+
+/* Stage behind the phone frame (desktop) */
+.stage {
+  background:
+    radial-gradient(900px 500px at 15% 10%, rgba(245, 181, 68, 0.14), transparent 60%),
+    radial-gradient(700px 500px at 90% 90%, rgba(213, 99, 59, 0.16), transparent 60%),
+    var(--color-pine-950);
+}
+
+/* Space reserved for the status bar and the home indicator */
+.phone {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (min-width: 640px) {
+  .phone { --safe-top: 40px; --safe-bottom: 8px; }
+}
+
+/* Warm glow used on dark green headers */
+.glow {
+  background:
+    radial-gradient(260px 160px at 100% 0%, rgba(245, 181, 68, 0.22), transparent 70%),
+    radial-gradient(220px 160px at 0% 100%, rgba(213, 99, 59, 0.2), transparent 70%),
+    var(--color-pine-900);
+}
